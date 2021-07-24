@@ -6,8 +6,8 @@
 
 
 // Defines usados na execução do problema. 
-#define ARRAY_SIZE 100000
-#define MAX_VALUE 200000
+#define ARRAY_SIZE (int) 1e5
+#define MAX_VALUE (int) 1e5
 
 typedef long long int lli;
 
