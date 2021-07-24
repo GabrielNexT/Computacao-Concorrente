@@ -7,6 +7,7 @@
 
 #define MAX_RANDOM_SIZE 9
 
+typedef long long int lli;
 typedef struct {
   int id;
   int start;
@@ -17,7 +18,7 @@ typedef struct {
   Variaveis necessária para a execução do código.
 */
 int matSize, numThreads;
-int *matrix, *matrixAux, *matrixResult;
+lli *matrix, *matrixAux, *matrixResult;
 pthread_t *osId, *localId;
 tArgs *params;
 
@@ -37,9 +38,9 @@ void readInput() {
   Função para reservar toda a memória necessária, baseada no input do usuário.
 */
 void reserveMemory () {
-  matrix = malloc(sizeof(int) * matSize * matSize);
-  matrixAux = malloc(sizeof(int) * matSize * matSize);
-  matrixResult = malloc(sizeof(int) * matSize * matSize);
+  matrix = malloc(sizeof(lli) * matSize * matSize);
+  matrixAux = malloc(sizeof(lli) * matSize * matSize);
+  matrixResult = malloc(sizeof(lli) * matSize * matSize);
   osId = malloc(sizeof(pthread_t) * numThreads);
   localId = malloc(sizeof(pthread_t) * numThreads);
   params = malloc(sizeof(tArgs) * numThreads);
@@ -83,10 +84,10 @@ void genMatrix() {
 /* 
   Imprime uma matriz específica.
 */
-void printMatrix(int *matrixTmp) {
+void printMatrix(lli *matrixTmp) {
   for(int i = 0; i < matSize; i++) {
     for(int j = 0; j < matSize; j++) {
-      printf("%d ", matrixTmp[i*matSize+j]);
+      printf("%lld ", matrixTmp[i*matSize+j]);
     }
     printf("\n");
   }
