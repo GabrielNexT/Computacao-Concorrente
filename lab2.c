@@ -110,7 +110,7 @@ void *cellMultiplication(void* arg) {
   tArgs *args = (tArgs*) arg;
 
   for(int i = args->start; i < args->end; i++) {
-    int count = 0;
+    lli count = 0;
     int line = i/matSize;
     int col = i - (line*matSize);
     for(int k = 0; k < matSize; k++) {
@@ -150,7 +150,7 @@ void matrixMultiplication() {
 void verifyResult() {
   for(int i = 0; i < matSize; i++) {
     for(int j = 0; j < matSize; j++) {
-      int count = 0;
+      lli count = 0;
       for(int k = 0; k < matSize; k++) {
         count += matrix[i*matSize+k]*matrixAux[k*matSize+j];
       }
