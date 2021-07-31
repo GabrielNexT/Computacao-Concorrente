@@ -27,8 +27,11 @@ jobs:
       
       - uses: egor-tensin/setup-gcc@v1
 
-      - name: Compile Lab1
+      - name: Compila Lab1
         run: gcc lab1.c -lpthread
 
-      - name: Compile Lab2
+      - name: Compila Lab2
         run: gcc lab2.c -lpthread
+
+      - name: Compila Lab3
+        run: gcc lab3.c -lpthread
