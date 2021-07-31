@@ -85,7 +85,9 @@ void genVector() {
   }
 }
 
-// Imprime o vector que foi gerado.
+/* 
+  Imprime o vector que foi gerado.
+*/
 void printVector() {
   for(int i = 0; i < vectorSize; i++) {
     printf("%lf ", vector[i]);
@@ -93,7 +95,9 @@ void printVector() {
   printf("\n");
 }
 
-// Função para comparar ponto flutuante de uma forma mais precisa.
+/* 
+  Função para comparar ponto flutuante de uma forma mais precisa.
+*/
 int floatCompare(float a, float b){
     float eps=1e-5;
     if(b+eps<a) return 1;
@@ -101,8 +105,10 @@ int floatCompare(float a, float b){
     return 0;
 }
 
-// Função que será chamada pelo threads, ela calcula o menor e maior valor
-// dada uma certa range e retorna usando o exit.
+/* 
+  Função que será chamada pelos threads, ela calcula o menor e maior valor
+  dada uma certa range e retorna usando o exit.
+*/
 void *getMinAndMax(void* arg) {
   tArgs *args = (tArgs*) arg;
   tResult *result = malloc(sizeof(tResult));
@@ -117,14 +123,18 @@ void *getMinAndMax(void* arg) {
   pthread_exit((void*) result);
 }
 
-// Função que controla os threads e divide o vetor entre eles, além de calcular a resposta 
-// correta com base no retorno de cada thread.
+/* 
+  Função que controla os threads e divide o vetor entre eles, além de calcular a resposta 
+  correta com base no retorno de cada thread.
+*/
 void solveUsingThreads() {
   int qtdPerThread = vectorSize / numThreads;
   for(int i = 0; i < numThreads; i++) {
     localId[i] = i;
     (params+i)->id = i;
     (params+i)->start = qtdPerThread * i;
+
+    // Caso esse threads seja o ultimo, ele deve ficar com todos os elementos restantes.
     (params+i)->end = (i == numThreads - 1 ? vectorSize : (params+i)->start + qtdPerThread); 
 
     if (pthread_create(&osId[i], NULL, getMinAndMax, (void*) (params+i))) {
@@ -147,8 +157,10 @@ void solveUsingThreads() {
   }
 }
 
-// Resolve o problema de forma sequencial e confere o resultado com o valor encontrado
-// pelos threads.
+/* 
+  Resolve o problema de forma sequencial e confere o resultado com o valor encontrado
+  pelos threads.
+*/
 void solveUsingOneThread() {
   float tmpMax = -1, tmpMin = INF;
   for(int i = 0; i < vectorSize; i++) {
