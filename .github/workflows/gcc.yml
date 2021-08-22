@@ -35,3 +35,6 @@ jobs:
 
       - name: Compila Lab3
         run: gcc lab3.c -lpthread
+
+      - name: Compila Lab4
+        run: gcc ./lab4/lab4.c -lpthread
