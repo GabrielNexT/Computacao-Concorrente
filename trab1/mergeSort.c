@@ -16,7 +16,7 @@ typedef struct {
   int low;
   int high;
 } tArgs;
-int *vector, *cloneVector; // Vetor original e um clone.
+int *vector, *cloneVector, *localId; // Vetor original e um clone.
 tArgs *params; // Vetor que guarda os parâmetros do theads.
 pthread_t *threads; // Threads que serão usados pelo algoritmo.
 
@@ -31,6 +31,7 @@ pthread_t *threads; // Threads que serão usados pelo algoritmo.
 void reserveMemory() {
   vector = malloc(sizeof(int) * VECTOR_SIZE);
   cloneVector = malloc(sizeof(int) * VECTOR_SIZE);
+  localId = malloc(sizeof(int) * NUM_THREAD);
   threads = malloc(sizeof(pthread_t) * NUM_THREAD);
   params = malloc(sizeof(tArgs) * NUM_THREAD);
 
@@ -163,8 +164,13 @@ void *merge_sort_worker(void *arg) {
 
   int low = (params+position)->low;
   int high = (params+position)->high;
-  
-  merge_sort(low, high);
+  int mid = low + (high-low)/2;
+
+  if (low < high) {
+    merge_sort(low, mid);
+    merge_sort(mid + 1, high);
+    merge(low, mid, high);
+  }
 }
 
 /* 
@@ -175,14 +181,13 @@ void executeMergeSortParallel() {
   // Cria os threads.
   for (int i = 0; i < NUM_THREAD; i++) {
     int low = i * (VECTOR_SIZE / NUM_THREAD);
-    int high = (i == NUM_THREAD - 1 ? VECTOR_SIZE - 1 : (i + 1) * (VECTOR_SIZE / NUM_THREAD) - 1);
+    int high = (i + 1) * (VECTOR_SIZE/NUM_THREAD) - 1;
 
+    localId[i] = i;
     (params+i)->low = low;
     (params+i)->high = high;
 
-    // printf("Criando thread com low = %d e high = %d\n", low, high);
-
-    pthread_create(&threads[i], NULL, merge_sort_worker, (void*) &i);
+    pthread_create(&threads[i], NULL, merge_sort_worker, (void*) &localId[i]);
   }
 
   // Aguarda o fim dos threads.
@@ -191,27 +196,24 @@ void executeMergeSortParallel() {
   }
 
   int n = VECTOR_SIZE;
-  merge(0, (n / 2 - 1) / 2, n / 2 - 1);
-  merge(n / 2, n/2 + (n-1-n/2)/2, n - 1);
-  merge(0, (n - 1)/2, n - 1);
+  // merge(0, (n / 2 - 1) / 2, n / 2 - 1);
+  // merge(n / 2, n/2 + (n-1-n/2)/2, n - 1);
+  // merge(0, (n - 1)/2, n - 1);
 
   // ! Tentativa fracassada de deixar o algoritmo escalável.
   // Realiza o merge do resultado de cada thread.
-  // for(int i = NUM_THREAD; i > 1; i /= 2) {
-  //   for(int j = 0; j < i; j += 2) {
-  //     int low = j * (VECTOR_SIZE/i);
-  //     int high = (j + 2) * (VECTOR_SIZE/i) - 1;
+  for(int i = NUM_THREAD; i > 1; i /= 2) {
+    for(int j = 0; j < i; j += 2) {
+      int low = j * (VECTOR_SIZE/i);
+      int high = (j + 2) * (VECTOR_SIZE/i) - 1;
 
-  //     if(j + 2 >= i) {
-  //       high = VECTOR_SIZE - 1;
-  //     }
-  //     printf("%d %d \n", i, j);
-  //     int mid = low + (high - low)/2;
-  //     printf("merge(%d, %d, %d)\n", low, mid, high);
-  //     merge(low, mid, high);
-  //     printVector(vector);
-  //   }
-  // }
+      if(j + 2 >= i) {
+        high = VECTOR_SIZE - 1;
+      }
+      int mid = low + (high - low)/2;
+      merge(low, mid, high);
+    }
+  }
 }
 
 
@@ -280,12 +282,12 @@ int main() {
   GET_TIME(start);
   reserveMemory();
   GET_TIME(finish);
-  printf("Tempo para reservar memoria: %.9lf\n", finish-start);
+  // printf("Tempo para reservar memoria: %.9lf\n", finish-start);
 
   GET_TIME(start);
   genRandomVector();
   GET_TIME(finish);
-  printf("Tempo para gerar o vetor: %.9lf\n", finish-start);
+  // printf("Tempo para gerar o vetor: %.9lf\n", finish-start);
 
   GET_TIME(start);
   executeMergeSortParallel();
@@ -305,7 +307,8 @@ int main() {
   GET_TIME(finish);
   printf("Tempo total testando: %.9lf\n", finish-start);
 
-  printf("Ganho de performance: %.2lf %% \n", (paralelo/sequencial));
+  printf("Ganho de performance: %.2lf %% \n", (paralelo/sequencial)-1);
+
 
 
   return 0;
