@@ -96,7 +96,7 @@ int main(int argc, char const *argv[]) {
   if(argc >= 2) {
     reserveMemory(atoi(argv[1]));
   } else {
-    printf("Informe a quantidade de threads como parametro agrv!.\n");
+    printf("Informe a quantidade de threads como parametro argv!.\n");
     exit(1);
   }
 

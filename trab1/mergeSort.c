@@ -7,7 +7,7 @@
 /* 
   * Variáveis globais e defines
 */
-#define VECTOR_SIZE 12 // Tamanho máximo do vetor.
+#define VECTOR_SIZE (int) 1e4 // Tamanho máximo do vetor.
 #define NUM_THREAD 4 // Número de threads.
 #define MAX_VALUE 100 // Valor máximo dos elementos do vetor.
 
@@ -285,7 +285,9 @@ int main() {
   // printf("Tempo para reservar memoria: %.9lf\n", finish-start);
 
   GET_TIME(start);
-  genRandomVector();
+  for(int i = 0; i < VECTOR_SIZE; i++) {
+    scanf("%d ", &vector[i]);
+  }
   GET_TIME(finish);
   // printf("Tempo para gerar o vetor: %.9lf\n", finish-start);
 
@@ -293,23 +295,21 @@ int main() {
   executeMergeSortParallel();
   GET_TIME(finish);
   paralelo = finish - start;
-  printf("Tempo total paralelo: %.9lf\n", paralelo);
+  // printf("Tempo total paralelo: %.9lf\n", paralelo);
 
 
   GET_TIME(start);
   mergeSort(0, VECTOR_SIZE - 1);
   GET_TIME(finish);
   sequencial = finish - start;
-  printf("Tempo total sequencial: %.9lf\n", sequencial);
+  // printf("Tempo total sequencial: %.9lf\n", sequencial);
 
   GET_TIME(start);
   test();
   GET_TIME(finish);
-  printf("Tempo total testando: %.9lf\n", finish-start);
+  // printf("Tempo total testando: %.9lf\n", finish-start);
 
-  printf("Ganho de performance: %.2lf %% \n", (paralelo/sequencial)-1);
-
-
+  printf("%lf,%lf,%.2lf%%\n", sequencial, paralelo, 100*(1 - (paralelo/sequencial)));
 
   return 0;
 }
