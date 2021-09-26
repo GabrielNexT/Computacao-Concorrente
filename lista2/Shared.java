@@ -24,7 +24,7 @@ public class Shared {
 
   synchronized void joinReader(Integer id) {
     try {
-      while(this.writerCount > 0 || this.writerWaiting > 0) {
+      while(this.writerCount.intValue() > 0 || this.writerWaiting.intValue() > 0) {
         System.out.println(
           String.format(
             "%sLeitor %d aguardando entrada...%s",
@@ -46,7 +46,7 @@ public class Shared {
   synchronized void leaveReader(Integer id) {
     this.readerCount--;
     System.out.println(String.format("Leitor %d saindo!", id));
-    if (this.readerCount == 0) {
+    if (this.readerCount.intValue() == 0) {
       this.notify();
     }
   }
@@ -54,7 +54,7 @@ public class Shared {
   synchronized void joinWriter(Integer id) {
     boolean inQueue = false;
     try {
-      while(this.readerCount > 0) {
+      while(this.readerCount.intValue() > 0) {
         this.writerWaiting++;
         inQueue = true;
         System.out.println(
@@ -79,7 +79,7 @@ public class Shared {
 
   synchronized void leaveWriter(Integer id) {
     this.writerCount--;
-    this.notifyAll();
+    this.notify();
     System.out.println(String.format("%sEscritor %d saindo, fila: %d %s", ANSI_RED, id, this.writerWaiting, ANSI_RESET));
   }
 
