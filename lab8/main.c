@@ -11,7 +11,6 @@ void *T1 (void *params) {
   sem_wait(&sem2);
   printf("Fique a vontade.\n");
   if(control == 1) {
-    printf("Controle 4!\n");
     sem_post(&sem3);
   } else {
     control++;
