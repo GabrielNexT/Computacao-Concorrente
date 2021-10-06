@@ -42,8 +42,7 @@ int pop() {
 
 void *producer(void *params) {
   int elemento;
-  int qtd = 1;
-  while(qtd--) {
+  while(1) {
     elemento = randomNumber();
     insert(elemento);
     printf("Elemento inserido! %d\n", elemento);
