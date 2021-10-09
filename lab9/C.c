@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <semaphore.h>
 #include <time.h>
+#include <pthread.h>
+
 
 /* 
   Muitos produtos e muitos consumidores

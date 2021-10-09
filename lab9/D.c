@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <semaphore.h>
 #include <time.h>
+#include <pthread.h>
 
 /* 
   Muitos produtores e um consumidor
