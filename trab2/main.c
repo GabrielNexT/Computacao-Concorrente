@@ -6,19 +6,55 @@
 #include <pthread.h>
 #include <math.h>
 
+/* 
+  Macro para auxiliar no debug e funcionamento do programa.
+  Insira -DDEBUG ao compilar para que a macro seja ativada.
+*/
 #ifdef DEBUG
 # define DEBUG_PRINT(x) printf x
 #else
 # define DEBUG_PRINT
 #endif
 
-sem_t emptySlot, fullBlock, wakeConsumer, lockConsumer, lockWriter;
+/* 
+  Semáforo que serão usados no programa
+  emptySlot: Marca que existe um espaço vazio no buffer, é necessário para o producer.
+  wakeConsumer: Marca que um produtor deve acordar, com isso, o produtor trabalha apenas quando necessário.
+  lockConsumer: Exclusão mútua para que um consumidor não pegue o mesmo elemento.
+  lockWriter: Exclusão mútua para que um escritor escreva por vez.
+*/
+sem_t emptySlot, wakeConsumer, lockConsumer, lockWriter;
 
+/* 
+  buffer: vetor que será usado para guardar os elemetos do vetor.
+  threadsIds: Vetor que guarda o ID dos threads.
+*/
 int *buffer, *threadsIds;
+
+/* 
+  threadsNum: Quantidade de threads que será usada pelo programa, o número é o input do usuário + 1.
+  blockSize: Tamanho do bloco que deve ser considerado na saída.
+  totalElements: Total de elementos na entrada.
+  totalCompleted: Total de elementos já processados na saída.
+  bufferSize: Quantidade de elementos que será guardado no Buffer, no enunciado foi informado
+    que deve ser 10 vezes o tamanho do bloco.
+*/
 int threadsNum, blockSize, totalElements, totalCompleted = 0, bufferSize;
+
+/* 
+  String que guardam o nome dos arquivos que serão usados para leitura e escrita, respectivamente.
+*/
 char inputFileName[255], outputFileName[255];
+
+/* 
+  Threads
+*/
 pthread_t* threads;
 
+/* 
+  Lê o input do usuário.
+  Caso o usuário insira os 4 elementos no ARGV, a entrada não é solicitada.
+*/
 void readInput(int argc, char const *argv[]) {
   if(argc == 5) { 
     threadsNum = atoi(argv[1]);
@@ -37,13 +73,11 @@ void readInput(int argc, char const *argv[]) {
   }
 
   bufferSize = 10 * blockSize;
-  // DEBUG_PRINT(("%d %d %s %s\n", threadsNum, blockSize, inputFileName, outputFileName));
 }
 
-void cleanFile() {
-
-}
-
+/* 
+  REserva as memórias usando malloc, limpa o arquivo de saída e inicia os semáforos.
+*/
 void reserveMemory() {
   threads = malloc(sizeof(pthread_t) * threadsNum + 1);
   buffer = malloc(sizeof(int) * bufferSize);
@@ -57,18 +91,36 @@ void reserveMemory() {
   fclose(fopen("output.txt", "w"));
 
   sem_init(&emptySlot, 0, bufferSize);
-  sem_init(&fullBlock, 0, 0);
   sem_init(&wakeConsumer, 0, 0);
   sem_init(&lockConsumer, 0, 1);
   sem_init(&lockWriter, 0, 1);
 }
 
+/* 
+  Limpa a memória e destrói semáforos.
+*/
 void freeMemory() {
   free(threads);
   free(threadsIds);
   free(buffer);
+
+  sem_destroy(&emptySlot);
+  sem_destroy(&wakeConsumer);
+  sem_destroy(&lockConsumer);
+  sem_destroy(&lockWriter);
 }
 
+/* 
+  Função auxiliar, será usada para ordenar os elementos usando o qsort do stdlib.
+*/
+int comparator(const void *a, const void *b) {
+  return ( *(int*)a - *(int*)b );
+}
+
+
+/* 
+  Insere elementos no buffer de uma forma segura.
+*/
 void insert(int element) {
   static int in = 0;
   static int count = 0;
@@ -76,14 +128,17 @@ void insert(int element) {
   buffer[in] = element;
   in = (in + 1) % bufferSize;
   count++;
+  // Caso exista um bloco completo, chama um produtor para pegar um bloco.
   if(count == blockSize) {
-    sem_post(&fullBlock);
     sem_post(&wakeConsumer);
     count = 0;
   }
 }
 
-int* pop(int id) {
+/* 
+  Remove um bloco do vetor de tamanho blockSize do vetor.
+*/
+int* pop() {
   int *itens = malloc(sizeof(int) * blockSize);
 
   if(itens == NULL) {
@@ -92,7 +147,6 @@ int* pop(int id) {
   }
 
   static int out = 0;
-  sem_wait(&fullBlock);
   sem_wait(&lockConsumer);
   for(int i = 0; i < blockSize; i++) {
     itens[i] = buffer[(out+i) % bufferSize];
@@ -103,6 +157,48 @@ int* pop(int id) {
   return itens;
 }
 
+/* 
+  Escritor
+  Função que será usada para imprimir os elementos no arquivo.
+  Assim que um consumidor puxar um bloco, ele irá ordenar e chamar a função para escrever.
+  Note que apenas um escritor pode escrever por vez.
+*/
+void writeBlock(int *vector) {
+  sem_wait(&lockWriter);
+
+  FILE *outputFile = fopen(outputFileName, "a");
+
+  if(outputFile == NULL) {
+    printf("ERROR: Nao foi possivel abrir o arquivo %s.\n", outputFileName);
+    exit(1);
+  }
+
+  for(int i = 0; i < blockSize; i++) {
+    fprintf(outputFile, "%d ", vector[i]);
+  }
+  fprintf(outputFile, "\n");
+
+  fclose(outputFile);
+
+  totalCompleted += blockSize;
+
+  /* 
+    Caso todos os elementos tenham sido processados, vamos acordar todos os consumidores.
+    Dessa forma eles vão cair na condição e sair de dentro do loop.
+  */
+  if(totalCompleted == totalElements) {
+    for(int i = 0; i < threadsNum+1; i++) {
+      sem_post(&wakeConsumer);
+    }
+  }
+
+  sem_post(&lockWriter);
+}
+
+/* 
+  Produtor
+  Função necessária por ler o arquivos e inserir os elementos no buffer.
+*/
 void *producer(void *params) {
   FILE *inputFile = fopen(inputFileName, "r");
 
@@ -122,40 +218,14 @@ void *producer(void *params) {
   pthread_exit(NULL);
 }
 
-int comparator(const void *a, const void *b) {
-  return ( *(int*)a - *(int*)b );
-}
-
-void writeBlock(int *vector, int threadId) {
-  sem_wait(&lockWriter);
-
-  FILE *outputFile = fopen(outputFileName, "a");
-
-  if(outputFile == NULL) {
-    printf("ERROR: Nao foi possivel abrir o arquivo %s.\n", outputFileName);
-    exit(1);
-  }
-
-  for(int i = 0; i < blockSize; i++) {
-    fprintf(outputFile, "%d ", vector[i]);
-  }
-  fprintf(outputFile, "\n");
-
-  totalCompleted += blockSize;
-
-  if(totalCompleted == totalElements) {
-    for(int i = 0; i < threadsNum+1; i++) {
-      sem_post(&wakeConsumer);
-    }
-  }
-
-  fclose(outputFile);
-  sem_post(&lockWriter);
-}
-
+/* 
+  Consumidor
+  Primeiro alocamos um vetor para que o consumidor receba um bloco, depois
+    esperamos até que um bloco esteja disponível para que o thread receba um bloco.
+*/
 void *consumer(void *params) {
   int consumerId = *(int*) params;
-  DEBUG_PRINT(("Entrei no consumidor %d!\n", consumerId));
+  DEBUG_PRINT(("C%d - Ligado\n", consumerId));
 
   int *localBuffer = malloc(sizeof(int) * blockSize);
 
@@ -164,19 +234,21 @@ void *consumer(void *params) {
     exit(1);
   }
 
-  int elemento;
   while (1) {
-    DEBUG_PRINT(("Consumer %d dormindo...\n", consumerId));
+    DEBUG_PRINT(("C%d - Dormindo...\n", consumerId));
     sem_wait(&wakeConsumer);
-    DEBUG_PRINT(("Consumer %d acordando...\n", consumerId));
+    DEBUG_PRINT(("C%d - Acordando...\n", consumerId));
+    /* 
+      Verifica se existe um bloco disponível.
+      Caso não exista, o consumidor pode ser encerrado.
+    */
     if(totalCompleted == totalElements) break;
-    localBuffer = pop(consumerId);
+    localBuffer = pop();
     qsort(localBuffer, blockSize, sizeof(int), comparator);
-    writeBlock(localBuffer, consumerId);
+    writeBlock(localBuffer);
   }
 
-
-  DEBUG_PRINT(("%d morreu\n", consumerId));
+  DEBUG_PRINT(("C%d - Desligando\n", consumerId));
   pthread_exit(NULL);
 }
 
@@ -186,18 +258,22 @@ void creatingThreads() {
     threadsIds[i] = i;
   }
 
+  // Criando apenas um produtor, com ID = 0, o resto são consumidores.
   pthread_create(&threads[0], NULL, producer, (void *) &threadsIds[0]);
   for(int i = 1; i < threadsNum + 1; i++) {
     pthread_create(&threads[0], NULL, consumer, (void *) &threadsIds[i]);
   }
 
+  // Aguardando todos os threads terminarem.
   for (int i = 0; i < threadsNum + 1; i++) {
     pthread_join(threads[i], NULL);
   }
 }
 
+/* 
+  A main
+*/
 int main(int argc, char const *argv[]) {
-  srand(time(NULL));
   readInput(argc, argv);
   reserveMemory();
   creatingThreads();
