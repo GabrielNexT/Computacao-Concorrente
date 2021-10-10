@@ -67,7 +67,6 @@ def runCurrentTestManyTimes():
   for test in range(1, 101):
     outputElement = []
     os.system(f"gcc main.c -pthread && ./a.out 10 10 input.txt output.txt")
-    tail = None
     with open("output.txt", "r") as outputFile:
       for line in outputFile.readlines():
         numbers = line.split(" ")
