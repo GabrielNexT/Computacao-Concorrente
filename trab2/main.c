@@ -230,12 +230,7 @@ void *consumer(void *params) {
   int consumerId = *(int*) params;
   DEBUG_PRINT(("C%d - Ligado\n", consumerId));
 
-  int *localBuffer = malloc(sizeof(int) * blockSize);
-
-  if(localBuffer == NULL) {
-    printf("Não foi possível alocar memória para o consumidor %d\n", consumerId);
-    exit(1);
-  }
+  int *localBuffer;
 
   while (1) {
     DEBUG_PRINT(("C%d - Dormindo...\n", consumerId));
