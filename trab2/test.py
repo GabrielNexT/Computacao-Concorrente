@@ -64,7 +64,7 @@ def runCurrentTestManyTimes():
   print(f"Testando com a mesma entrada e variando o tamanho do bloco e consumidores.")
   print(f"Elementos na entrada: {totalElements}")
 
-  for test in range(1, 10000):
+  for test in range(1, 101):
     outputElement = []
     os.system(f"gcc main.c -pthread && ./a.out 10 10 input.txt output.txt")
     tail = None
