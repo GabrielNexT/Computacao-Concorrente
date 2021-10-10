@@ -51,6 +51,8 @@ char inputFileName[255], outputFileName[255];
 */
 pthread_t* threads;
 
+FILE *outputFile;
+
 /* 
   Lê o input do usuário.
   Caso o usuário insira os 4 elementos no ARGV, a entrada não é solicitada.
@@ -94,12 +96,16 @@ void reserveMemory() {
   sem_init(&wakeConsumer, 0, 0);
   sem_init(&lockConsumer, 0, 1);
   sem_init(&lockWriter, 0, 1);
+
+  outputFile = fopen(outputFileName, "a");
 }
 
 /* 
   Limpa a memória e destrói semáforos.
 */
 void freeMemory() {
+  fclose(outputFile);
+
   free(threads);
   free(threadsIds);
   free(buffer);
@@ -166,8 +172,6 @@ int* pop() {
 void writeBlock(int *vector) {
   sem_wait(&lockWriter);
 
-  FILE *outputFile = fopen(outputFileName, "a");
-
   if(outputFile == NULL) {
     printf("ERROR: Nao foi possivel abrir o arquivo %s.\n", outputFileName);
     exit(1);
@@ -178,7 +182,6 @@ void writeBlock(int *vector) {
   }
   fprintf(outputFile, "\n");
 
-  fclose(outputFile);
 
   totalCompleted += blockSize;
 
